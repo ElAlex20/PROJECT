@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Tareas Colaborativas (RMI)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-bg: #ecf0f1;
+            --dark-text: #2c3e50;
+            --light-text: #ffffff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 2rem;
+        }
+        
+        .status-filter {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .filter-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+        
+        .filter-option {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        
+        .filter-option:hover {
+            color: var(--secondary-color);
+        }
+        
+        .filter-option.active {
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+        
+        .filter-option span {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        .filter-option .pending {
+            background-color: orange;
+        }
+        
+        .filter-option .in-progress {
+            background-color: blue;
+        }
+        
+        .filter-option .completed {
+            background-color: green;
+        }
+        
+        .filter-option .assigned {
+            background-color: purple;
+        }
+        
+        .task-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .task-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .task-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        
+        .task-status {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            color: white;
+        }
+        
+        .status-pending {
+            background-color: orange;
+        }
+        
+        .status-in-progress {
+            background-color: blue;
+        }
+        
+        .status-completed {
+            background-color: green;
+        }
+        
+        .task-description {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.8rem;
+            font-size: 0.8rem;
+            color: #777;
+        }
+        
+        .task-assigned {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .assigned-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        .task-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .edit-btn {
+            background-color: #f1c40f;
+            color: #333;
+        }
+        
+        .complete-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .delete-btn {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 50%;
+            max-width: 600px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .connection-status {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-connected {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: white;
+        }
+        
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Gestor de Tareas Colaborativas</div>
+        <div class="user-info">
+            <span id="username">Usuario</span>
+            <div class="user-avatar">U</div>
+        </div>
+    </header>
+    
+    <main>
+        <div class="status-filter">
+            <h3 class="filter-title">Filtrar por Estado</h3>
+            <div class="filter-option active">
+                <span class="all"></span>
+                Todas
+            </div>
+            <div class="filter-option">
+                <span class="pending"></span>
+                Pendientes
+            </div>
+            <div class="filter-option">
+                <span class="in-progress"></span>
+                En progreso
+            </div>
+            <div class="filter-option">
+                <span class="completed"></span>
+                Completadas
+            </div>
+            <div class="filter-option">
+                <span class="assigned"></span>
+                Asignadas a mí
+            </div>
+            
+            <h3 class="filter-title" style="margin-top: 2rem;">Usuarios Conectados</h3>
+            <div id="connected-users">
+                <div class="filter-option">
+                    <span class="user-indicator" style="background-color: green;"></span>
+                    María Rodríguez
+                </div>
+                <div class="filter-option">
+                    <span class="user-indicator" style="background-color: green;"></span>
+                    Juan López
+                </div>
+                <div class="filter-option">
+                    <span class="user-indicator" style="background-color: green;"></span>
+                    Ana García
+                </div>
+            </div>
+        </div>
+        
+        <div class="task-section">
+            <div class="section-header">
+                <h2 class="section-title">Tareas</h2>
+                <button id="addTaskBtn" class="btn btn-primary">+ Nueva Tarea</button>
+            </div>
+            
+            <div class="task-list">
+                <div class="task-card">
+                    <div class="task-header">
+                        <h3 class="task-title">Desarrollar API de autenticación</h3>
+                        <span class="task-status status-in-progress">En progreso</span>
+                    </div>
+                    <p class="task-description">Implementar endpoints para registro, login y recuperación de contraseña con JWT.</p>
+                    <div class="task-meta">
+                        <div class="task-assigned">
+                            <div class="assigned-avatar">JL</div>
+                            <span>Juan López</span>
+                        </div>
+                        <div class="task-date">Vence: 15/05/2025</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="action-btn edit-btn">Editar</button>
+                        <button class="action-btn complete-btn">Completar</button>
+                        <button class="action-btn delete-btn">Eliminar</button>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <div class="task-header">
+                        <h3 class="task-title">Diseñar interfaz de usuario</h3>
+                        <span class="task-status status-pending">Pendiente</span>
+                    </div>
+                    <p class="task-description">Crear mockups en Figma para todas las vistas principales de la aplicación.</p>
+                    <div class="task-meta">
+                        <div class="task-assigned">
+                            <div class="assigned-avatar">MR</div>
+                            <span>María Rodríguez</span>
+                        </div>
+                        <div class="task-date">Vence: 10/05/2025</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="action-btn edit-btn">Editar</button>
+                        <button class="action-btn complete-btn">Completar</button>
+                        <button class="action-btn delete-btn">Eliminar</button>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <div class="task-header">
+                        <h3 class="task-title">Implementar sistema de notificaciones</h3>
+                        <span class="task-status status-completed">Completada</span>
+                    </div>
+                    <p class="task-description">Desarrollar sistema de notificaciones en tiempo real con WebSockets.</p>
+                    <div class="task-meta">
+                        <div class="task-assigned">
+                            <div class="assigned-avatar">AG</div>
+                            <span>Ana García</span>
+                        </div>
+                        <div class="task-date">Completada: 01/05/2025</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="action-btn edit-btn">Editar</button>
+                        <button class="action-btn delete-btn">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal para añadir/editar tarea -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Nueva Tarea</h2>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="taskTitle">Título</label>
+                    <input type="text" id="taskTitle" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="taskDescription">Descripción</label>
+                    <textarea id="taskDescription" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="taskAssignee">Asignar a</label>
+                    <select id="taskAssignee" class="form-control">
+                        <option value="">-- Seleccionar usuario --</option>
+                        <option value="1">María Rodríguez</option>
+                        <option value="2">Juan López</option>
+                        <option value="3">Ana García</option>
+                        <option value="4">Yo mismo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="taskDueDate">Fecha de vencimiento</label>
+                    <input type="date" id="taskDueDate" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="taskStatus">Estado</label>
+                    <select id="taskStatus" class="form-control">
+                        <option value="pending">Pendiente</option>
+                        <option value="in-progress">En progreso</option>
+                        <option value="completed">Completada</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" id="cancelTaskBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="connection-status status-connected">
+        <div class="status-indicator"></div>
+        Conectado al servidor RMI
+    </div>
+    
+    <script>
+        // Mostrar/ocultar modal
+        const modal = document.getElementById("taskModal");
+        const addTaskBtn = document.getElementById("addTaskBtn");
+        const closeBtn = document.querySelector(".close");
+        const cancelBtn = document.getElementById("cancelTaskBtn");
+        
+        addTaskBtn.onclick = function() {
+            document.getElementById("modalTitle").textContent = "Nueva Tarea";
+            document.getElementById("taskForm").reset();
+            modal.style.display = "block";
+        }
+        
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+        
+        cancelBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+        
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+        
+        // Editar tarea
+        const editBtns = document.querySelectorAll(".edit-btn");
+        editBtns.forEach(btn => {
+            btn.onclick = function() {
+                const taskCard = this.closest(".task-card");
+                const title = taskCard.querySelector(".task-title").textContent;
+                const description = taskCard.querySelector(".task-description").textContent;
+                const status = taskCard.querySelector(".task-status").textContent;
+                
+                document.getElementById("modalTitle").textContent = "Editar Tarea";
+                document.getElementById("taskTitle").value = title;
+                document.getElementById("taskDescription").value = description;
+                
+                if (status === "Pendiente") {
+                    document.getElementById("taskStatus").value = "pending";
+                } else if (status === "En progreso") {
+                    document.getElementById("taskStatus").value = "in-progress";
+                } else if (status === "Completada") {
+                    document.getElementById("taskStatus").value = "completed";
+                }
+                
+                modal.style.display = "block";
+            }
+        });
+        
+        // Completar tarea
+        const completeBtns = document.querySelectorAll(".complete-btn");
+        completeBtns.forEach(btn => {
+            btn.onclick = function() {
+                const taskCard = this.closest(".task-card");
+                const statusBadge = taskCard.querySelector(".task-status");
+                
+                statusBadge.className = "task-status status-completed";
+                statusBadge.textContent = "Completada";
+                
+                // Eliminar el botón de completar
+                this.remove();
+                
+                // Simular actualización RMI
+                simulateRmiSync("completeTask", {
+                    taskId: Math.floor(Math.random() * 1000),
+                    status: "completed"
+                });
+            }
+        });
+        
+        // Filtrar tareas
+        const filterOptions = document.querySelectorAll(".filter-option");
+        filterOptions.forEach(option => {
+            option.onclick = function() {
+                // Quitar la clase activa de todas las opciones
+                filterOptions.forEach(opt => opt.classList.remove("active"));
+                
+                // Añadir la clase activa a la opción seleccionada
+                this.classList.add("active");
+                
+                // Implementar la lógica de filtrado aquí
+                const filterType = this.textContent.trim();
+                console.log(Filtrando por: ${filterType});
+                
+                // Simular actualización RMI
+                simulateRmiSync("filterTasks", {
+                    filter: filterType
+                });
+            }
+        });
+        
+        // Enviar formulario
+        const taskForm = document.getElementById("taskForm");
+        taskForm.onsubmit = function(e) {
+            e.preventDefault();
+            
+            const taskData = {
+                title: document.getElementById("taskTitle").value,
+                description: document.getElementById("taskDescription").value,
+                assignee: document.getElementById("taskAssignee").value,
+                dueDate: document.getElementById("taskDueDate").value,
+                status: document.getElementById("taskStatus").value
+            };
+            
+            console.log("Datos de la tarea:", taskData);
+            
+            // Simular creación/actualización RMI
+            simulateRmiSync("saveTask", taskData);
+            
+            // Cerrar modal
+            modal.style.display = "none";
+            
+            // Actualizar UI (en una aplicación real, esto se haría después de la respuesta del servidor)
+            updateTaskList(taskData);
+        }
+        
+        // Función de simulación RMI
+        function simulateRmiSync(method, data) {
+            console.log(Llamada RMI: ${method}, data);
+            
+            // Simular latencia de red
+            const statusIndicator = document.querySelector(".status-indicator");
+            statusIndicator.style.backgroundColor = "yellow";
+            
+            setTimeout(() => {
+                console.log(Respuesta RMI para ${method}: éxito);
+                statusIndicator.style.backgroundColor = "white";
+                
+                // Mostrar notificación de sincronización
+                showNotification(Cambios sincronizados con otros usuarios);
+            }, 800);
+        }
+        
+        // Función para actualizar la lista de tareas
+        function updateTaskList(taskData) {
+            const taskList = document.querySelector(".task-list");
+            
+            // Crear nueva tarjeta de tarea
+            const newTask = document.createElement("div");
+            newTask.className = "task-card";
+            
+            let statusClass = "";
+            let statusText = "";
+            
+            switch (taskData.status) {
+                case "pending":
+                    statusClass = "status-pending";
+                    statusText = "Pendiente";
+                    break;
+                case "in-progress":
+                    statusClass = "status-in-progress";
+                    statusText = "En progreso";
+                    break;
+                case "completed":
+                    statusClass = "status-completed";
+                    statusText = "Completada";
+                    break;
+            }
+            
+            // Obtener nombre del asignado
+            let assigneeName = "Usuario";
+            let assigneeInitials = "U";
+            
+            if (taskData.assignee === "1") {
+                assigneeName = "María Rodríguez";
+                assigneeInitials = "MR";
+            } else if (taskData.assignee === "2") {
+                assigneeName = "Juan López";
+                assigneeInitials = "JL";
+            } else if (taskData.assignee === "3") {
+                assigneeName = "Ana García";
+                assigneeInitials = "AG";
+            } else if (taskData.assignee === "4") {
+                assigneeName = "Yo mismo";
+                assigneeInitials = document.querySelector(".user-avatar").textContent;
+            }
+            
+            // Formatear fecha
+            const formattedDate = taskData.dueDate ? 
+                new Date(taskData.dueDate).toLocaleDateString('es-ES') : 
+                new Date().toLocaleDateString('es-ES');
+            
+            newTask.innerHTML = `
+                <div class="task-header">
+                    <h3 class="task-title">${taskData.title}</h3>
+                    <span class="task-status ${statusClass}">${statusText}</span>
+                </div>
+                <p class="task-description">${taskData.description}</p>
+                <div class="task-meta">
+                    <div class="task-assigned">
+                        <div class="assigned-avatar">${assigneeInitials}</div>
+                        <span>${assigneeName}</span>
+                    </div>
+                    <div class="task-date">Vence: ${formattedDate}</div>
+                </div>
+                <div class="task-actions">
+                    <button class="action-btn edit-btn">Editar</button>
+                    ${taskData.status !== "completed" ? '<button class="action-btn complete-btn">Completar</button>' : ''}
+                    <button class="action-btn delete-btn">Eliminar</button>
+                </div>
+            `;
+            
+            // Añadir la nueva tarea al principio de la lista
+            taskList.prepend(newTask);
+            
+            // Añadir eventos a los botones de la nueva tarea
+            const newEditBtn = newTask.querySelector(".edit-btn");
+            newEditBtn.onclick = editBtns[0].onclick;
+            
+            const newCompleteBtn = newTask.querySelector(".complete-btn");
+            if (newCompleteBtn) {
+                newCompleteBtn.onclick = completeBtns[0].onclick;
+            }
+            
+            // Añadir evento de eliminación
+            const newDeleteBtn = newTask.querySelector(".delete-btn");
+            newDeleteBtn.onclick = function() {
+                if (confirm("¿Estás seguro de que deseas eliminar esta tarea?")) {
+                    newTask.remove();
+                    simulateRmiSync("deleteTask", { taskId: Math.floor(Math.random() * 1000) });
+                }
+            };
+        }
+        
+        // Función para mostrar notificaciones
+        function showNotification(message) {
+            const notification = document.createElement("div");
+            notification.style.position = "fixed";
+            notification.style.bottom = "4rem";
+            notification.style.right = "1rem";
+            notification.style.backgroundColor = "#3498db";
+            notification.style.color = "white";
+            notification.style.padding = "0.8rem 1.5rem";
+            notification.style.borderRadius = "4px";
+            notification.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+            notification.style.zIndex = "1000";
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = "0";
+                notification.style.transition = "opacity 0.5s ease";
+                
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 500);
+            }, 3000);
+        }
+        
+        // Inicializar nombre de usuario (simulación)
+        document.getElementById("username").textContent = "Carlos Vega";
+        document.querySelector(".user-avatar").textContent = "CV";
+        
+        // Inicializar eventos de eliminación
+        const deleteBtns = document.querySelectorAll(".delete-btn");
+        deleteBtns.forEach(btn => {
+            btn.onclick = function() {
+                if (confirm("¿Estás seguro de que deseas eliminar esta tarea?")) {
+                    const taskCard = this.closest(".task-card");
+                    taskCard.remove();
+                    
+                    // Simular actualización RMI
+                    simulateRmiSync("deleteTask", {
+                        taskId: Math.floor(Math.random() * 1000)
+                    });
+                }
+            }
+        });
+        
+        // Simular actualización desde otro cliente (después de 5 segundos)
+        setTimeout(() => {
+            const remoteTaskData = {
+                title: "Optimizar consultas SQL",
+                description: "Mejorar el rendimiento de las consultas en la base de datos para reducir tiempos de respuesta.",
+                assignee: "3",
+                dueDate: "2025-05-20",
+                status: "pending"
+            };
+            
+            updateTaskList(remoteTaskData);
+            showNotification("Nueva tarea añadida por Ana García");
+        }, 5000);
+    </script>
+</body>
+</html>
